@@ -1,0 +1,10 @@
+lab/clickstream/service/ClickEventService$StoreResult.class
+lab/clickstream/controller/ApiExceptionHandler$ApiError.class
+lab/clickstream/component/ClickEventRowMapper.class
+lab/clickstream/service/ClickEventService.class
+lab/clickstream/controller/ClickEventController.class
+lab/clickstream/controller/ApiExceptionHandler.class
+lab/clickstream/model/ClickEvent.class
+lab/clickstream/repository/ClickEventRepository.class
+lab/clickstream/ClickstreamApplication.class
+lab/clickstream/model/ClickCount.class

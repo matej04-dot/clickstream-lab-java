@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Praćenje klikova</title>
+  <style>
+    body { max-width: 42rem; margin: 3rem auto; padding: 0 1rem; font-family: sans-serif; }
+    button { margin: 0 .5rem .5rem 0; padding: .6rem 1rem; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: .6rem; text-align: left; border-bottom: 1px solid #ccc; }
+    [role="alert"] { color: #a21b1b; }
+  </style>
+</head>
+<body>
+  <h1>Praćenje klikova</h1>
+  <p>Kliknite gumb za spremanje događaja. Statistika se osvježava svake dvije sekunde.</p>
+  <div id="buttons">
+    <button id="signup-button" type="button">Registracija</button>
+    <button id="products-button" type="button">Proizvodi</button>
+    <button id="contact-button" type="button">Kontakt</button>
+  </div>
+  <p id="click-status" role="status" aria-live="polite"></p>
+  <p id="click-error" role="alert"></p>
+  <h2>Spremljeni klikovi</h2>
+  <table>
+    <thead><tr><th scope="col">ID elementa</th><th scope="col">Broj</th></tr></thead>
+    <tbody id="stats-body"></tbody>
+  </table>
+  <p id="stats-status" role="status" aria-live="polite">Učitavanje statistike…</p>
+  <p id="stats-error" role="alert"></p>
+  <script>
+    const clickStatus = document.getElementById("click-status");
+    const clickError = document.getElementById("click-error");
+    const statsStatus = document.getElementById("stats-status");
+    const statsError = document.getElementById("stats-error");
+    const statsBody = document.getElementById("stats-body");
+
+    async function sendClick(button, sessionId) {
+      try {
+        const event = {
+          event_id: crypto.randomUUID(),
+          schema_version: 1,
+          occurred_at: new Date().toISOString(),
+          session_id: sessionId,
+          page: window.location.pathname,
+          element_id: button.id
+        };
+        const response = await fetch("/events/click", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(event),
+          signal: AbortSignal.timeout(5000)
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        clickError.textContent = "";
+        clickStatus.textContent = `${button.id}: klik je spremljen.`;
+        await refreshStats(false);
+      } catch (error) {
+        clickStatus.textContent = "";
+        clickError.textContent = `Spremanje klika nije uspjelo: ${error.message}`;
+      }
+    }
+
+    function initializeClicks() {
+      const buttons = document.querySelectorAll("#buttons button");
+      try {
+        let sessionId = sessionStorage.getItem("click-monitoring:session_id");
+        if (!sessionId) {
+          sessionId = crypto.randomUUID();
+          sessionStorage.setItem("click-monitoring:session_id", sessionId);
+        }
+        for (const button of buttons) {
+          button.addEventListener("click", () => sendClick(button, sessionId));
+        }
+      } catch (error) {
+        clickError.textContent = `Praćenje klikova nije pokrenuto: ${error.message}`;
+        for (const button of buttons) button.disabled = true;
+      }
+    }
+
+    async function refreshStats(schedule = true) {
+      try {
+        const response = await fetch("/stats/clicks", {
+          cache: "no-store",
+          signal: AbortSignal.timeout(5000)
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const counts = await response.json();
+        const rows = counts.map(({ element_id, count }) => {
+          const row = document.createElement("tr");
+          for (const value of [element_id, count]) {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.append(cell);
+          }
+          return row;
+        });
+        statsBody.replaceChildren(...rows);
+        statsError.textContent = "";
+        statsStatus.textContent = counts.length ? "Brojevi uključuju sve spremljene klikove." : "Još nema spremljenih klikova.";
+      } catch (error) {
+        statsStatus.textContent = "Prikazani brojevi možda nisu ažurni.";
+        statsError.textContent = `Dohvat statistike nije uspio: ${error.message}`;
+      } finally {
+        if (schedule) setTimeout(() => refreshStats(true), 2000);
+      }
+    }
+
+    initializeClicks();
+    refreshStats();
+  </script>
+</body>
+</html>
