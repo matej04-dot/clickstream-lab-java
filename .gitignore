@@ -4,3 +4,24 @@
 
 # Maven build output
 target/
+
+# Local editor settings
+.vscode/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+

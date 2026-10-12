@@ -24,6 +24,7 @@ set -a
 source .env
 set +a
 docker compose config --quiet
+docker stop clickstream-java-postgres-1
 docker compose up -d --wait
 ./mvnw spring-boot:run
 ```
@@ -36,11 +37,23 @@ slanja; mrežni timeout može nastati i nakon potvrđenog upisa u bazu.
 
 Compose učitava `.env`, ali Java proces ne učitava tu datoteku automatski;
 zato prije pokretanja izvozimo varijable. Zadani portovi su 8080 za aplikaciju
-i 5434 za PostgreSQL. Za promjenu koristite `SERVER_PORT` i `POSTGRES_PORT`.
+i 5433 za PostgreSQL. Za promjenu koristite `SERVER_PORT` i `POSTGRES_PORT`.
 Podržane su i standardne `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`
 i `SPRING_DATASOURCE_PASSWORD` postavke.
 
-Flyway pri pokretanju stvara tablicu `click_events` i bilježi migracije.
+Compose koristi postojeći volumen `click-monitoring_postgres_data` i stari
+PostgreSQL projekt `click-monitoring`. Prije pokretanja zaustavite novu bazu
+`clickstream-java-postgres-1`, koja zauzima isti port. Postojeći volumen mora
+već postojati; Compose neće stvoriti praznu zamjensku bazu. U `.env` koristite
+pristupne podatke stare baze i `SPRING_FLYWAY_ENABLED=false` kako bi aplikacija
+koristila postojeću tablicu bez pokretanja migracija. Stare podatke možete
+provjeriti naredbom:
+
+```bash
+docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT count(*) FROM click_events;"'
+```
+
+Kada je Flyway uključen, pri pokretanju stvara tablicu `click_events` i bilježi migracije.
 Ako baza pri pokretanju nije dostupna ili migracija ne uspije, aplikacija se
 ne pokreće. Za prekid veze tijekom rada API vraća 503. Ostale neočekivane
 pogreške vraćaju 500 bez SQL-a i pristupnih podataka u odgovoru.
