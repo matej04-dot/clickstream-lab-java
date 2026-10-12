@@ -14,7 +14,7 @@
 </head>
 <body>
   <h1>Praćenje klikova</h1>
-  <p>Kliknite gumb za spremanje događaja. Statistika se osvježava svake dvije sekunde.</p>
+  <p>Kliknite gumb za spremanje događaja. Statistika se osvježava nakon uspješno spremljenog klika.</p>
   <div id="buttons">
     <button id="signup-button" type="button">Registracija</button>
     <button id="products-button" type="button">Proizvodi</button>
@@ -55,7 +55,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         clickError.textContent = "";
         clickStatus.textContent = `${button.id}: klik je spremljen.`;
-        await refreshStats(false);
+        await refreshStats();
       } catch (error) {
         clickStatus.textContent = "";
         clickError.textContent = `Spremanje klika nije uspjelo: ${error.message}`;
@@ -79,7 +79,7 @@
       }
     }
 
-    async function refreshStats(schedule = true) {
+    async function refreshStats() {
       try {
         const response = await fetch("/stats/clicks", {
           cache: "no-store",
@@ -102,8 +102,6 @@
       } catch (error) {
         statsStatus.textContent = "Prikazani brojevi možda nisu ažurni.";
         statsError.textContent = `Dohvat statistike nije uspio: ${error.message}`;
-      } finally {
-        if (schedule) setTimeout(() => refreshStats(true), 2000);
       }
     }
 

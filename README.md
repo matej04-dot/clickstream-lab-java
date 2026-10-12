@@ -30,13 +30,15 @@ docker compose up -d --wait
 ```
 
 Otvorite <http://localhost:8080/>. Stranica ima tri gumba i statistiku koja se
-osvježava nakon uspješnog spremanja i svake dvije sekunde. Sesija se čuva u
+učitava pri otvaranju stranice i osvježava nakon uspješnog spremanja klika. Sesija se čuva u
 `sessionStorage`; svaki klik dobiva novi UUID. Ako zahtjev ne uspije, stranica
 prikazuje pogrešku i ne tvrdi da je klik spremljen. Nema automatskog ponovnog
 slanja; mrežni timeout može nastati i nakon potvrđenog upisa u bazu.
 
-Compose učitava `.env`, ali Java proces ne učitava tu datoteku automatski;
-zato prije pokretanja izvozimo varijable. Zadani portovi su 8080 za aplikaciju
+Compose i Java aplikacija učitavaju `.env` iz korijena projekta. Java ga čita
+kao properties datoteku: koristite `IME=vrijednost` bez navodnika za vrijednosti.
+Izvoz varijabli nije potreban za `./mvnw spring-boot:run`; već izvezene varijable
+imaju prednost pred `.env`. Zadani portovi su 8080 za aplikaciju
 i 5433 za PostgreSQL. Za promjenu koristite `SERVER_PORT` i `POSTGRES_PORT`.
 Podržane su i standardne `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`
 i `SPRING_DATASOURCE_PASSWORD` postavke.
