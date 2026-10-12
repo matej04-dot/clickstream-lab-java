@@ -1,8 +1,0 @@
-/home/korisnik/projects/clickstream-lab-java/src/main/java/lab/clickstream/ClickstreamApplication.java
-/home/korisnik/projects/clickstream-lab-java/src/main/java/lab/clickstream/component/ClickEventRowMapper.java
-/home/korisnik/projects/clickstream-lab-java/src/main/java/lab/clickstream/controller/ApiExceptionHandler.java
-/home/korisnik/projects/clickstream-lab-java/src/main/java/lab/clickstream/controller/ClickEventController.java
-/home/korisnik/projects/clickstream-lab-java/src/main/java/lab/clickstream/model/ClickCount.java
-/home/korisnik/projects/clickstream-lab-java/src/main/java/lab/clickstream/model/ClickEvent.java
-/home/korisnik/projects/clickstream-lab-java/src/main/java/lab/clickstream/repository/ClickEventRepository.java
-/home/korisnik/projects/clickstream-lab-java/src/main/java/lab/clickstream/service/ClickEventService.java
