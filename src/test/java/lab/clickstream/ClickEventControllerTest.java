@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.dao.DataAccessResourceFailureException;
-import org.springframework.jdbc.BadSqlGrammarException;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.time.OffsetDateTime;
@@ -83,7 +83,7 @@ class ClickEventControllerTest {
                 .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.detail").value("Baza je nedostupna. Pokušajte ponovno."));
         when(service.counts()).thenThrow(new DataAccessResourceFailureException("secret"));
         mvc.perform(get("/stats/clicks")).andExpect(status().isServiceUnavailable());
-        doThrow(new BadSqlGrammarException("internal", "secret SQL", new java.sql.SQLException())).when(service).counts();
+        doThrow(new InvalidDataAccessResourceUsageException("secret query")).when(service).counts();
         mvc.perform(get("/stats/clicks")).andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.detail").value("Neočekivana pogreška poslužitelja."));
     }

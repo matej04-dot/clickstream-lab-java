@@ -27,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ClickstreamIT {
     @Container static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17.11-bookworm");
     @DynamicPropertySource static void database(DynamicPropertyRegistry r) {
+        r.add("spring.flyway.enabled", () -> true);
         r.add("spring.datasource.url", postgres::getJdbcUrl);
         r.add("spring.datasource.username", postgres::getUsername);
         r.add("spring.datasource.password", postgres::getPassword);
@@ -57,7 +58,9 @@ class ClickstreamIT {
         assertThat(service.findById(UUID.randomUUID())).isEmpty();
         assertThat(service.counts()).hasSize(1);
         assertThat(service.counts().getFirst().count()).isEqualTo(1);
-        mvc.perform(get("/")).andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith("text/html"));
+        mvc.perform(get("/")).andExpect(status().isOk()).andExpect(forwardedUrl("index.html"));
+        mvc.perform(get("/index.html")).andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/html"));
         mvc.perform(post("/events/click").contentType("application/json").content(ClickEventControllerTest.JSON))
                 .andExpect(status().isCreated());
         mvc.perform(get("/stats/clicks")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));

@@ -66,21 +66,26 @@ pogreške vraćaju 500 bez SQL-a i pristupnih podataka u odgovoru.
 
 1. `ClickEventController` (`@RestController`) prima JSON, provodi validaciju
    i pretvara rezultat u HTTP odgovor.
-2. `ClickEventService` (`@Service`) upravlja spremanjem i dohvatom. Metoda
-   spremanja ima `@Transactional`: INSERT i dohvat spremljenog retka dio su
-   iste transakcije, koja se potvrđuje prije povratka rezultata controlleru.
-3. `ClickEventRepository` (`@Repository`) izvršava parametrizirane upite preko
-   `JdbcTemplate`. HikariCP upravlja skupom veza s PostgreSQL-om.
-4. `ClickEventRowMapper` (`@Component`) mapira SQL retke u Java record.
+2. `ClickEventService` (`@Service`) upravlja spremanjem i dohvatom. Novi
+   događaj sprema se i potvrđuje u zasebnoj JPA transakciji.
+3. `ClickEventRepository` nasljeđuje `JpaRepository<ClickEventEntity, UUID>`.
+   Spring Data JPA pruža `findById` i `saveAndFlush`; statistika koristi JPQL
+   upit koji rezultate vraća kao `ClickCount` record.
+4. `ClickEventEntity` je `@Entity` mapiran na tablicu `click_events`, s UUID
+   poljem označenim `@Id`. Hibernate mapira retke; JDBC row mapper više ne postoji.
+   `ClickEvent` ostaje validirani API DTO, odvojen od entiteta baze.
 
-Sve ovisnosti primaju se kroz konstruktor. Component je pomoćna komponenta
-repositoryja; nije dodatni korak kroz koji mora prolaziti svaki zahtjev.
-JSON nazivi ostaju snake_case, a Java polja koriste camelCase.
+Entitet implementira `Persistable` jer UUID dodjeljuje preglednik. Novi entitet
+zato koristi JPA `persist`, a ne `merge` koji bi mogao prepisati postojeći klik.
+Postojeći UUID vraća izvorni događaj. Ako istodobni zahtjevi pokušaju spremiti
+isti UUID, primarni ključ dopušta samo jedan INSERT; nakon rollbacka duplikat
+se dohvaća u novoj transakciji. Ostale pogreške integriteta ne tretiraju se kao
+uspješni duplikati.
 
-UUID je primarni ključ. `INSERT ... ON CONFLICT DO NOTHING` atomarno sprečava
-duplikate i pri istodobnim zahtjevima. Ponovljeni ID vraća izvorni događaj,
-čak i kada se novi sadržaj razlikuje. Statistika broji sve pohranjene događaje,
-neovisno o stranici i sesiji, sortirano prema `element_id`.
+`spring.jpa.hibernate.ddl-auto=validate` provjerava postojeću shemu bez mijenjanja
+ili brisanja tablica. `spring.jpa.open-in-view=false` drži pristup bazi izvan
+renderiranja HTTP odgovora. Statistika broji sve pohranjene događaje, neovisno o
+stranici i sesiji, sortirano prema `element_id`.
 
 ## API
 
@@ -123,7 +128,7 @@ java -jar target/clickstream-java-0.0.1-SNAPSHOT.jar
 Obični testovi koriste MockMvc i zamjenski service, bez baze i Dockera.
 Integracijski profil zahtijeva Docker: Testcontainers pokreće zaseban
 PostgreSQL i provjerava Flyway, stvarnu pohranu, konkurentne duplikate,
-Unicode, vremenske trenutke, SQL parametre, statistiku i HTTP tijek.
+Unicode, vremenske trenutke, JPA mapiranje, statistiku i HTTP tijek.
 Integracijski testovi ne koriste razvojnu bazu i ne preskaču se ako Docker
 nedostaje: profil tada prijavljuje pogrešku.
 
@@ -140,8 +145,8 @@ postgres` osvježavanje ponovno prikazuje podatke.
 ## Trajnost i zaustavljanje
 
 Aplikaciju zaustavite s Ctrl+C. `docker compose down` uklanja kontejnere,
-ali čuva podatke u volumenu projekta `clickstream-java`. Ponovno pokretanje
-koristi istu bazu. `docker compose down --volumes` briše podatke.
+ali čuva podatke u vanjskom volumenu `click-monitoring_postgres_data`. Ponovno
+pokretanje koristi istu bazu. Compose ne uklanja vanjski volumen ni uz `--volumes`.
 Promjena lozinke u `.env` ne mijenja lozinku u već inicijaliziranoj bazi.
 
 Projekt je lokalni primjer za učenje, bez autentikacije i prijenosa podataka
