@@ -14,17 +14,12 @@ Iz korijena projekta:
 cp -n .env.example .env
 ```
 
-U `.env` zamijenite predložak lozinke vlastitom lokalnom lozinkom. Za naredbe
-ispod koristite Bash zapise `IME=vrijednost`; posebne znakove stavite unutar
-jednostrukih navodnika. `source` izvršava sadržaj datoteke, pa učitajte samo
-vlastitu, pouzdanu konfiguraciju.
+U `.env` upišite pristupne podatke postojeće baze. Koristite zapise
+`IME=vrijednost` bez navodnika: Compose i Java aplikacija sami učitavaju tu
+datoteku, pa je ne trebate učitavati naredbom `source`.
 
 ```bash
-set -a
-source .env
-set +a
 docker compose config --quiet
-docker stop clickstream-java-postgres-1
 docker compose up -d --wait
 ./mvnw spring-boot:run
 ```
@@ -43,12 +38,26 @@ i 5433 za PostgreSQL. Za promjenu koristite `SERVER_PORT` i `POSTGRES_PORT`.
 Podržane su i standardne `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`
 i `SPRING_DATASOURCE_PASSWORD` postavke.
 
-Compose koristi postojeći volumen `click-monitoring_postgres_data` i stari
-PostgreSQL projekt `click-monitoring`. Prije pokretanja zaustavite novu bazu
-`clickstream-java-postgres-1`, koja zauzima isti port. Postojeći volumen mora
-već postojati; Compose neće stvoriti praznu zamjensku bazu. U `.env` koristite
-pristupne podatke stare baze i `SPRING_FLYWAY_ENABLED=false` kako bi aplikacija
-koristila postojeću tablicu bez pokretanja migracija. Stare podatke možete
+Ako drugi projekt koristi portove 8080 ili 5433, odaberite slobodne portove.
+Primjer za 8081 i 5434, bez izmjene `.env`:
+
+```bash
+POSTGRES_PORT=5434 docker compose up -d --wait
+SERVER_PORT=8081 POSTGRES_PORT=5434 ./mvnw spring-boot:run
+```
+
+Tada otvorite <http://localhost:8081/> i u primjerima `curl` zamijenite 8080
+s 8081. Nakon zaustavljanja aplikacije koristite
+`POSTGRES_PORT=5434 docker compose down`. Ove privremene postavke vrijede
+samo za naredbu uz koju su navedene; zadani portovi ostaju 8080 i 5433.
+
+Compose koristi postojeći volumen `click-monitoring_postgres_data` i naziv
+projekta `click-monitoring`. Postojeći volumen mora već postojati; Compose
+neće stvoriti praznu zamjensku bazu. Prije pokretanja provjerite kontejnere
+naredbom `docker ps`; port baze mora biti slobodan, a isti volumen ne smiju
+istodobno koristiti dvije PostgreSQL instance. U `.env` koristite pristupne
+podatke postojeće baze i `SPRING_FLYWAY_ENABLED=false` kako bi aplikacija
+koristila postojeću tablicu bez pokretanja migracija. Spremljene podatke možete
 provjeriti naredbom:
 
 ```bash
